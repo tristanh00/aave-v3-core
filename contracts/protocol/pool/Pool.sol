@@ -59,10 +59,11 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
   }
 
   function _onlyPoolConfigurator() internal view {
-    require(
-      _addressesProvider.getPoolConfigurator() == msg.sender,
-      Errors.P_CALLER_NOT_POOL_CONFIGURATOR
-    );
+    if (_addressesProvider.getPoolConfigurator() != msg.sender) revert Errors.PCallerNotPoolConfigurator();
+    // require(
+    //   _addressesProvider.getPoolConfigurator() == msg.sender,
+    //   Errors.P_CALLER_NOT_POOL_CONFIGURATOR
+    // );
   }
 
   function getRevision() internal pure override returns (uint256) {
@@ -314,8 +315,8 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
           receiveAToken
         )
       );
-
-    require(success, Errors.P_LIQUIDATION_CALL_FAILED);
+    if (!success) revert Errors.PLiquidationCallFailed();
+    // require(success, Errors.P_LIQUIDATION_CALL_FAILED);
 
     (uint256 returnCode, string memory returnMessage) = abi.decode(result, (uint256, string));
 
@@ -369,10 +370,13 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
       IAToken(vars.aTokenAddresses[vars.i]).transferUnderlyingTo(receiverAddress, amounts[vars.i]);
     }
 
-    require(
-      vars.receiver.executeOperation(assets, amounts, vars.totalPremiums, msg.sender, params),
-      Errors.P_INVALID_FLASH_LOAN_EXECUTOR_RETURN
-    );
+    if (!vars.receiver.executeOperation(assets, amounts, vars.totalPremiums, msg.sender, params)) {
+      revert Errors.PInvalidFlashloanExecutorReturn();
+    }
+    // require(
+    //   vars.receiver.executeOperation(assets, amounts, vars.totalPremiums, msg.sender, params),
+    //   Errors.P_INVALID_FLASH_LOAN_EXECUTOR_RETURN
+    // );
 
     for (vars.i = 0; vars.i < assets.length; vars.i++) {
       vars.currentAsset = assets[vars.i];
@@ -610,7 +614,8 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
     uint256 balanceFromBefore,
     uint256 balanceToBefore
   ) external override {
-    require(msg.sender == _reserves[asset].aTokenAddress, Errors.P_CALLER_MUST_BE_AN_ATOKEN);
+    if (msg.sender != _reserves[asset].aTokenAddress) revert Errors.PCallerMustBeAtoken();
+    // require(msg.sender == _reserves[asset].aTokenAddress, Errors.P_CALLER_MUST_BE_AN_ATOKEN);
 
     ValidationLogic.validateTransfer(_reserves[asset]);
 
@@ -653,7 +658,8 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
     address variableDebtAddress,
     address interestRateStrategyAddress
   ) external override onlyPoolConfigurator {
-    require(Address.isContract(asset), Errors.P_NOT_CONTRACT);
+    if (!Address.isContract(asset)) revert Errors.PNotContract();
+    // require(Address.isContract(asset), Errors.P_NOT_CONTRACT);
     _reserves[asset].init(
       aTokenAddress,
       stableDebtAddress,
@@ -949,7 +955,8 @@ contract Pool is VersionedInitializable, IPool, PoolStorage {
   function _addReserveToList(address asset) internal returns (uint8) {
     uint256 reservesCount = _reservesCount;
 
-    require(reservesCount < _maxNumberOfReserves, Errors.P_NO_MORE_RESERVES_ALLOWED);
+    if (reservesCount >= _maxNumberOfReserves) revert Errors.PNoMoreReservesAllowed();
+    // require(reservesCount < _maxNumberOfReserves, Errors.P_NO_MORE_RESERVES_ALLOWED);
 
     bool reserveAlreadyAdded = _reserves[asset].id != 0 || _reservesList[0] == asset;
 

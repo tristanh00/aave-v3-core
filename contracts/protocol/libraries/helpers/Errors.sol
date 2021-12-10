@@ -16,6 +16,7 @@ pragma solidity 0.8.10;
  *  - PAPR = PoolAddressesProviderRegistry
  *  - PC = PoolConfiguration
  *  - RL = ReserveLogic
+ *  - P = Pausable
  */
 library Errors {
   //common errors
